@@ -1,0 +1,43 @@
+**Father Time — Time-Aware Agent for Claude Code**
+*Because Claude doesn't know what time it is. Until now.*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Yesterday Anthropic announced adjusted session limits during peak hours. Your 5-hour limits now drain faster on weekdays 5am-11am PT.
+
+Father Time is a plugin that gives Claude **persistent time awareness** — it knows the time on every single prompt, tracks your session duration, warns you about peak hours, learns your work patterns, and helps you pace your usage.
+
+**What's included:**
+
+**Hook** — injects current time + peak status + session duration on every prompt. Claude always knows when it is.
+
+**8 Skills:**
+- `/father-time:time-menu` — interactive menu to access all capabilities via a guided selector
+- `/father-time:peak-hours` — peak throttle window status for ANY timezone
+- `/father-time:session-timer` — how long you've been going, with checkpoint nudges
+- `/father-time:daily-brief` — morning briefing with schedule outlook and work recommendations
+- `/father-time:pace-check` — rate limit forecasting based on session intensity
+- `/father-time:focus-mode` — focus timer with presets (pomodoro, deep-work, sprint, marathon)
+- `/father-time:activity-patterns` — analyzes when you work, detects night owl vs early bird, shows peak hour overlap
+- `/father-time:session-health` — JSONL file size, context usage estimate, compaction proximity, rate limit status
+
+**Peak hours for every timezone:**
+```
+PT:   5:00 AM – 11:00 AM     ET:   8:00 AM – 2:00 PM
+GMT:  1:00 PM –  7:00 PM     CET:  2:00 PM – 8:00 PM
+IST:  6:30 PM – 12:30 AM     JST: 10:00 PM – 4:00 AM
+AEST: 11:00 PM – 5:00 AM     NZST: 1:00 AM – 7:00 AM
+```
+
+**Install:**
+```
+claude plugin marketplace add AfterRealm/father-time
+claude plugin install father-time
+```
+
+Requires: Claude Code v2.1.78+, Python 3.
+All data stays local. Nothing transmitted.
+
+MIT Licensed | https://github.com/AfterRealm/father-time
+
+*Built the day after the throttle announcement. Because timing is everything.*
