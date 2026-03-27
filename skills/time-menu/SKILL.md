@@ -135,10 +135,12 @@ Peak hours by timezone:
 
 ### Pace Check
 
-Based on session duration and typical token usage patterns:
-- Estimate how much of the 5-hour session limit has been used
-- Warn when approaching limits
-- Suggest optimal timing for heavy vs light work
+Run the usage check script for real rate limit data:
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py"
+```
+
+This returns real utilization percentages and reset times for session (5h), weekly (7d), and Opus limits. Present the results clearly with recommendations based on usage level.
 
 ### Daily Brief
 

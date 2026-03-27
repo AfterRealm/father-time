@@ -117,10 +117,11 @@ Peak hours by timezone:
 - **NZST**: 1:00 AM – 7:00 AM
 
 ### Rate Limit Forecasting
-Based on session duration and typical token usage patterns:
-- Estimate how much of the 5-hour session limit has been used
-- Warn when approaching limits
-- Suggest optimal timing for heavy vs light work
+Run the usage check script for real rate limit data:
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py"
+```
+Returns real utilization percentages and reset times for session (5h), weekly (7d), and Opus limits.
 
 ### Daily Briefing
 Provide:

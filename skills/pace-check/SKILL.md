@@ -1,62 +1,61 @@
 ---
 name: pace-check
-description: Estimate rate limit usage and forecast when you'll hit session limits. Use when asking about rate limits, pacing, token usage, or how much runway you have left.
+description: Check real rate limit usage from the Anthropic API — session (5-hour), weekly, and Opus utilization. Use when asking about rate limits, pacing, token usage, or how much runway you have left.
 model: haiku
 ---
 
-# Pace Check — Rate Limit Forecasting
+# Pace Check — Rate Limit Status
 
-Help the user understand their rate limit consumption and plan accordingly.
+Show the user their real rate limit usage from the Anthropic API.
 
-## How Anthropic Limits Work
+## How to Get Real Data
 
-- **5-hour rolling window**: session limits reset on a rolling basis
-- **Weekly limit**: overall cap that doesn't change
-- **Peak hours** (weekdays 5am-11am PT): 5-hour limits drain faster
-- **Off-peak**: normal drain rate
-- **Tier matters**: Free < Pro < Max (Max gets priority allocation)
+Run the usage check script:
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py"
+```
 
-## What to Estimate
-
-Claude Code doesn't expose exact token counters, but we can estimate based on:
-
-1. **Session duration** — from session_start.txt
-2. **Prompt frequency** — how often the user is prompting (from conversation pace)
-3. **Work type** — heavy (code gen, multi-file edits, agent spawning) vs light (questions, small edits)
-4. **Peak multiplier** — during peak, limits drain ~1.5-2x faster
+This fetches real utilization data from `api.anthropic.com/api/oauth/usage` using the user's OAuth token. It returns:
+- **Session (5h)** — 5-hour rolling window utilization % and reset time
+- **Weekly (7d)** — 7-day utilization % and reset time
+- **Opus (7d)** — Opus-specific weekly utilization (if available)
 
 ## Response Format
 
+Present the script output clearly. Add context based on the numbers:
+
 ```
-Session: [duration]
-Mode: [PEAK / OFF-PEAK]
-Estimated pace: [light / moderate / heavy]
-Runway: [rough estimate of comfortable remaining time]
-Suggestion: [actionable advice]
+Rate Limits:
+  Session (5h):  [bar] XX% — resets in Xh Xm
+  Weekly (7d):   [bar] XX% — resets in Xd Xh
+  Opus (7d):     [bar] XX% — resets in Xd Xh
+  Peak status:   [PEAK / OFF-PEAK]
+
+[Recommendation based on current usage]
 ```
 
-## Pace Categories
+## How to Interpret
 
-**Light** (mostly questions, reading, small edits):
-- Off-peak: 8-12+ hours of comfortable use
-- Peak: 4-6 hours
+| Session % | Status | Advice |
+|-----------|--------|--------|
+| < 30% | Comfortable | Work freely |
+| 30-60% | Moderate | Monitor, consider lighter work |
+| 60-80% | High | Conserve — switch to Sonnet for routine tasks |
+| 80%+ | Critical | Expect throttling soon, wait or do light work |
 
-**Moderate** (mix of generation and questions, some agent use):
-- Off-peak: 4-8 hours
-- Peak: 2-4 hours
+| Weekly % | Status | Advice |
+|----------|--------|--------|
+| < 50% | Fine | No concerns |
+| 50-80% | Watch it | Pace over remaining days |
+| 80%+ | Tight | Conserve until reset |
 
-**Heavy** (constant code gen, multi-file refactors, lots of agents, large context):
-- Off-peak: 2-4 hours
-- Peak: 1-2 hours
+## Tips to Share When Usage is High
 
-## Tips to Share
-
-- Switch to Sonnet for routine tasks (`/model sonnet`) — uses fewer tokens per response
+- Switch to Sonnet for routine tasks (`/model sonnet`) — uses fewer tokens
 - Use `/compact` to reduce context size
 - Shift heavy work to off-peak hours
-- Max tier users are less affected by peak throttling but not immune
 - If rate limited: wait 15-30 minutes, limits roll over continuously
 
 ## Important
 
-Never make the user anxious about usage. Frame it as helpful information, not a countdown clock. "You're doing great, here's your runway" not "WARNING: you're burning through tokens."
+If the script fails with "No OAuth token found", the user needs to be logged into Claude Code. Never make the user anxious — frame it as helpful info, not a countdown clock.
