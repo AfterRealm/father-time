@@ -1,7 +1,6 @@
 ---
 name: focus-mode
 description: Start a focus timer for deep work sessions. Tracks elapsed time and optionally reminds about breaks. Use when the user wants to focus, start a timer, or do a pomodoro session.
-model: haiku
 ---
 
 # Focus Mode

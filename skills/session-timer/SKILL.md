@@ -1,7 +1,6 @@
 ---
 name: session-timer
 description: Check how long the current session has been running. Use when asking about session length, duration, or whether it's time to checkpoint.
-model: haiku
 ---
 
 # Session Timer

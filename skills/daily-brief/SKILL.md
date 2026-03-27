@@ -1,7 +1,6 @@
 ---
 name: daily-brief
 description: Get a morning briefing with peak hour status, schedule outlook, and work recommendations for the day. Use at the start of a new day or when asking for a daily summary.
-model: sonnet
 ---
 
 # Daily Briefing

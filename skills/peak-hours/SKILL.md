@@ -1,7 +1,6 @@
 ---
 name: peak-hours
 description: Check if you're in Anthropic's peak throttling window. Shows status for any timezone. Use when asking about peak hours, rate limits, or best time to work.
-model: haiku
 ---
 
 # Peak Hours Check

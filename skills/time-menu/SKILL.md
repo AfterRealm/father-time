@@ -1,6 +1,5 @@
 ---
 name: time-menu
-model: haiku
 description: >
   Time-aware assistant for Claude Code session management. Use when the user
   asks about time, session health, peak hours, rate limits, pacing, work

@@ -2,6 +2,11 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.4.0] — 2026-03-27
+
+### Fixed
+- Removed `model:` field from all 8 skills — skills were forcing Haiku/Sonnet model switches, which likely caused premature context compaction by switching to a 200K context window mid-session
+
 ## [1.3.0] — 2026-03-27
 
 ### Added
