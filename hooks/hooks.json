@@ -7,6 +7,11 @@
             "type": "command",
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/time_inject.py\"",
             "statusMessage": "Checking time..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/compaction_warn.py\"",
+            "statusMessage": "Checking context..."
           }
         ]
       }

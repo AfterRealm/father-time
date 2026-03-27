@@ -203,6 +203,85 @@ def main():
         print(f"Opus (7d):     [{bar}] {pct:.1f}%")
         print(f"  Resets in: {resets}")
 
+    # Forecast section
+    print("\n=== Forecast ===\n")
+    five = data.get("five_hour")
+    if five and five.get("utilization", 0) > 0:
+        pct = five["utilization"]
+        resets_at = five.get("resets_at")
+        if resets_at:
+            try:
+                reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
+                now = datetime.now(reset_dt.tzinfo)
+                remaining_min = max(0, (reset_dt - now).total_seconds() / 60)
+                # How long until 100% at current burn rate
+                if pct < 100 and remaining_min > 0:
+                    # Rate: pct% used in (300 - remaining_min) minutes
+                    elapsed_min = 300 - remaining_min  # 5h window = 300 min
+                    if elapsed_min > 0:
+                        rate_per_min = pct / elapsed_min
+                        mins_to_full = (100 - pct) / rate_per_min if rate_per_min > 0 else float('inf')
+                        if mins_to_full < 300:
+                            h = int(mins_to_full) // 60
+                            m = int(mins_to_full) % 60
+                            if h > 0:
+                                print(f"  Session limit: ~{h}h {m}m until full at current pace")
+                            else:
+                                print(f"  Session limit: ~{m}m until full at current pace")
+                        else:
+                            print(f"  Session limit: unlikely to hit before reset")
+                elif pct >= 100:
+                    print(f"  Session limit: REACHED — resets in {format_reset(resets_at)}")
+            except Exception:
+                pass
+
+    seven = data.get("seven_day")
+    if seven and seven.get("utilization", 0) > 0:
+        pct = seven["utilization"]
+        resets_at = seven.get("resets_at")
+        if resets_at:
+            try:
+                reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
+                now = datetime.now(reset_dt.tzinfo)
+                remaining_hours = max(0, (reset_dt - now).total_seconds() / 3600)
+                total_hours = 168  # 7 days
+                elapsed_hours = total_hours - remaining_hours
+                if elapsed_hours > 0 and pct < 100:
+                    rate_per_hour = pct / elapsed_hours
+                    hours_to_full = (100 - pct) / rate_per_hour if rate_per_hour > 0 else float('inf')
+                    days = int(hours_to_full) // 24
+                    hours = int(hours_to_full) % 24
+                    if hours_to_full > remaining_hours:
+                        print(f"  Weekly limit: unlikely to hit before reset")
+                    elif days > 0:
+                        print(f"  Weekly limit: ~{days}d {hours}h until full at current pace")
+                    else:
+                        print(f"  Weekly limit: ~{hours}h until full at current pace")
+                elif pct >= 100:
+                    print(f"  Weekly limit: REACHED — resets in {format_reset(resets_at)}")
+            except Exception:
+                pass
+
+    # Burn rate for subscription users
+    if seven and seven.get("utilization", 0) > 0:
+        pct = seven["utilization"]
+        resets_at = seven.get("resets_at")
+        if resets_at:
+            try:
+                reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
+                now = datetime.now(reset_dt.tzinfo)
+                remaining_hours = max(0, (reset_dt - now).total_seconds() / 3600)
+                total_hours = 168
+                elapsed_hours = total_hours - remaining_hours
+                days_elapsed = elapsed_hours / 24
+                days_remaining = remaining_hours / 24
+                if days_elapsed > 0:
+                    daily_rate = pct / days_elapsed
+                    budget_remaining = 100 - pct
+                    print(f"\n  Burn rate: {daily_rate:.1f}%/day ({budget_remaining:.0f}% budget left, {days_remaining:.1f} days to reset)")
+            except Exception:
+                pass
+
     # Output raw JSON for debugging if --json flag passed
     if "--json" in sys.argv:
         print(f"\nRaw: {json.dumps(data, indent=2)}")

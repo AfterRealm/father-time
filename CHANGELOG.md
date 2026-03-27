@@ -2,6 +2,21 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.6.0] — 2026-03-27
+
+### Added
+- **Compaction warning** — hook on every prompt that warns at 60%, 75%, and 85% context usage
+- **Session cost estimate** — estimated API cost per session based on model and token counts
+- **Rate limit forecasting** — predicts when you'll hit session/weekly limits at current pace
+- **Subscription burn rate** — daily burn percentage and remaining budget for weekly limits
+- **Context budget skill** — estimate token cost of files before reading, with model price comparison (Opus/Sonnet/Haiku)
+- `.gitignore` for `__pycache__/`
+
+### Changed
+- Session health output now includes `Est. cost` line with detected model
+- Usage check output now includes `Forecast` section with time-to-limit predictions
+- Time menu adds "Context Budget" option under Session submenu
+
 ## [1.5.0] — 2026-03-27
 
 ### Added

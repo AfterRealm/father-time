@@ -1,6 +1,6 @@
 {
   "name": "father-time",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Time-aware agent for Claude Code. Peak hour warnings, session tracking, daily briefings, rate limit forecasting, focus timers, and activity pattern learning. Because Claude should know what time it is.",
   "author": {
     "name": "Meredith",

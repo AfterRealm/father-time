@@ -44,10 +44,13 @@ Ask a follow-up with AskUserQuestion:
 **Options:**
 
 1. **Label:** "Session Health"
-   **Description:** "Context usage, compaction risk, cache efficiency, and token counts from JSONL"
+   **Description:** "Context usage, compaction risk, cache efficiency, token counts, and cost estimate"
 
 2. **Label:** "Session Timer"
    **Description:** "How long the current session has been running"
+
+3. **Label:** "Context Budget"
+   **Description:** "Estimate token cost of a file or directory before reading it"
 
 Then run the appropriate capability below.
 

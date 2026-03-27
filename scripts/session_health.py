@@ -58,14 +58,25 @@ def analyze_session(jsonl_path):
     total_cache_read = 0
     total_cache_write = 0
     turns = 0
+    model = "opus"  # default
 
     for line in lines:
         if not line.strip():
             continue
         try:
             entry = json.loads(line.strip())
-            if entry.get('message', {}).get('usage'):
-                u = entry['message']['usage']
+            # Detect model from assistant messages
+            msg = entry.get('message', {})
+            if msg.get('model', ''):
+                m = msg['model'].lower()
+                if 'opus' in m:
+                    model = 'opus'
+                elif 'sonnet' in m:
+                    model = 'sonnet'
+                elif 'haiku' in m:
+                    model = 'haiku'
+            if msg.get('usage'):
+                u = msg['usage']
                 total_output += u.get('output_tokens', 0)
                 total_input += u.get('input_tokens', 0)
                 total_cache_read += u.get('cache_read_input_tokens', 0)
@@ -99,6 +110,7 @@ def analyze_session(jsonl_path):
         'total_cache_write': total_cache_write,
         'turns': turns,
         'compactions': compaction_count,
+        'model': model,
     }
 
 def format_tokens(n):
@@ -120,6 +132,23 @@ def compaction_risk(pct):
     if pct < 60: return "Moderate"
     if pct < 80: return "High — consider checkpointing"
     return "Imminent — checkpoint NOW"
+
+# Pricing per 1M tokens (as of March 2026)
+MODEL_PRICING = {
+    "opus": {"input": 15.00, "cache_read": 1.50, "cache_write": 18.75, "output": 75.00},
+    "sonnet": {"input": 3.00, "cache_read": 0.30, "cache_write": 3.75, "output": 15.00},
+    "haiku": {"input": 0.80, "cache_read": 0.08, "cache_write": 1.00, "output": 4.00},
+}
+
+def calc_session_cost(stats, model="opus"):
+    """Calculate estimated session cost from token counts."""
+    pricing = MODEL_PRICING.get(model, MODEL_PRICING["opus"])
+    cost = 0
+    cost += (stats['total_input'] / 1_000_000) * pricing["input"]
+    cost += (stats['total_cache_read'] / 1_000_000) * pricing["cache_read"]
+    cost += (stats['total_cache_write'] / 1_000_000) * pricing["cache_write"]
+    cost += (stats['total_output'] / 1_000_000) * pricing["output"]
+    return cost
 
 def parse_args():
     """Parse CLI args: optional --threshold N and optional project filter."""
@@ -280,6 +309,8 @@ def main():
             print(f"  Turns: {stats['turns']}")
             print(f"  Cache hit: {format_tokens(stats['cache_read'])} read / {format_tokens(stats['cache_write'])} write")
             print(f"  Total tokens: {format_tokens(stats['total_input'])} in / {format_tokens(stats['total_output'])} out")
+            cost = calc_session_cost(stats, stats.get('model', 'opus'))
+            print(f"  Est. cost: ${cost:.2f} ({stats['model']})")
         else:
             print(f"  (no usage data found)")
         print()
