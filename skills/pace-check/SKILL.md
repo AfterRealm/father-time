@@ -14,6 +14,13 @@ Run the usage check script:
 python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py"
 ```
 
+To force a fresh fetch (bypass cache):
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py" --refresh
+```
+
+Results are cached for 5 minutes to avoid API rate limits. The output shows whether data is live or cached.
+
 This fetches real utilization data from `api.anthropic.com/api/oauth/usage` using the user's OAuth token. It returns:
 - **Session (5h)** — 5-hour rolling window utilization % and reset time
 - **Weekly (7d)** — 7-day utilization % and reset time

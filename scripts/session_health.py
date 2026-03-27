@@ -6,10 +6,13 @@ Usage: python session_health.py [project_path_filter]
 import os
 import sys
 import json
+import time
 import urllib.request
 import urllib.error
 from pathlib import Path
 from datetime import datetime
+
+CACHE_MAX_AGE = 300  # 5 minutes
 
 def find_claude_projects():
     base = Path.home() / ".claude" / "projects"
@@ -133,8 +136,42 @@ def parse_args():
             i += 1
     return threshold, project_filter
 
+def get_cache_path():
+    plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if plugin_data:
+        return Path(plugin_data) / "usage_cache.json"
+    return Path.home() / ".claude" / "usage_cache.json"
+
+def read_usage_cache():
+    cache_path = get_cache_path()
+    try:
+        if not cache_path.exists():
+            return None
+        data = json.loads(cache_path.read_text(encoding="utf-8"))
+        age = time.time() - data.get("fetched_at", 0)
+        if age < CACHE_MAX_AGE:
+            return data
+        return None
+    except Exception:
+        return None
+
+def read_stale_cache():
+    cache_path = get_cache_path()
+    try:
+        return json.loads(cache_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+def write_usage_cache(data):
+    cache_path = get_cache_path()
+    try:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        data["fetched_at"] = time.time()
+        cache_path.write_text(json.dumps(data), encoding="utf-8")
+    except Exception:
+        pass
+
 def get_oauth_token():
-    """Find the OAuth token from Claude's credential files."""
     home = Path.home()
     paths = [
         home / ".claude" / ".credentials.json",
@@ -154,10 +191,13 @@ def get_oauth_token():
     return None
 
 def fetch_usage():
-    """Fetch rate limit data from Anthropic usage API."""
+    """Fetch rate limit data — cache first, API fallback, stale cache last resort."""
+    cached = read_usage_cache()
+    if cached:
+        return cached
     token = get_oauth_token()
     if not token:
-        return None
+        return read_stale_cache()
     req = urllib.request.Request(
         "https://api.anthropic.com/api/oauth/usage",
         headers={
@@ -169,9 +209,11 @@ def fetch_usage():
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read().decode())
+            data = json.loads(resp.read().decode())
+            write_usage_cache(data)
+            return data
     except Exception:
-        return None
+        return read_stale_cache()
 
 def format_reset(resets_at):
     """Format a reset timestamp into a readable string."""

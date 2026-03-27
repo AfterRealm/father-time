@@ -139,6 +139,20 @@ Run the usage check script for real rate limit data:
 python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py"
 ```
 
+Results are cached for 5 minutes. After showing results, ask the user if they want to refresh:
+
+Use AskUserQuestion with:
+**Question:** "Data is cached. Want to refresh?"
+**Header:** "Pace"
+**Options:**
+1. **Label:** "Refresh" **Description:** "Force a fresh API call for latest numbers"
+2. **Label:** "Done" **Description:** "Numbers look good"
+
+If Refresh is selected, run:
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py" --refresh
+```
+
 This returns real utilization percentages and reset times for session (5h), weekly (7d), and Opus limits. Present the results clearly with recommendations based on usage level.
 
 ### Daily Brief
