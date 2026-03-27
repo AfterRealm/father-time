@@ -6,6 +6,8 @@ Usage: python session_health.py [project_path_filter]
 import os
 import sys
 import json
+import urllib.request
+import urllib.error
 from pathlib import Path
 from datetime import datetime
 
@@ -131,7 +133,78 @@ def parse_args():
             i += 1
     return threshold, project_filter
 
+def get_oauth_token():
+    """Find the OAuth token from Claude's credential files."""
+    home = Path.home()
+    paths = [
+        home / ".claude" / ".credentials.json",
+        home / ".claude" / "credentials.json",
+    ]
+    appdata = os.environ.get("APPDATA", "")
+    if appdata:
+        paths.append(Path(appdata) / "claude" / "credentials.json")
+    for p in paths:
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            token = data.get("claudeAiOauth", {}).get("accessToken")
+            if token:
+                return token
+        except Exception:
+            continue
+    return None
+
+def fetch_usage():
+    """Fetch rate limit data from Anthropic usage API."""
+    token = get_oauth_token()
+    if not token:
+        return None
+    req = urllib.request.Request(
+        "https://api.anthropic.com/api/oauth/usage",
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}",
+            "anthropic-beta": "oauth-2025-04-20",
+            "User-Agent": "claude-code/2.0.32",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode())
+    except Exception:
+        return None
+
+def format_reset(resets_at):
+    """Format a reset timestamp into a readable string."""
+    if not resets_at:
+        return "unknown"
+    try:
+        reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
+        now = datetime.now(reset_dt.tzinfo)
+        delta = reset_dt - now
+        total_minutes = int(delta.total_seconds() / 60)
+        if total_minutes < 0:
+            return "resetting soon"
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        if hours > 0:
+            return f"{hours}h {minutes}m"
+        return f"{minutes}m"
+    except Exception:
+        return resets_at
+
+def format_usage_bar(label, pct, resets_at, label_width=15):
+    """Format a single usage bar line."""
+    bar_len = 20
+    filled = int(pct / 100 * bar_len)
+    bar = "\u2588" * filled + "\u2591" * (bar_len - filled)
+    reset_str = format_reset(resets_at)
+    return f"  {label:<{label_width}} [{bar}] {pct:.1f}%  (resets in {reset_str})"
+
 def main():
+    # Fix Windows encoding
+    if sys.stdout.encoding != "utf-8":
+        sys.stdout.reconfigure(encoding="utf-8")
+
     projects = find_claude_projects()
     if not projects:
         print("No Claude projects found.")
@@ -169,6 +242,21 @@ def main():
             print(f"  Total tokens: {format_tokens(stats['total_input'])} in / {format_tokens(stats['total_output'])} out")
         else:
             print(f"  (no usage data found)")
+        print()
+
+    # Rate limits section
+    usage = fetch_usage()
+    if usage:
+        print("=== Rate Limits ===\n")
+        five = usage.get("five_hour")
+        if five:
+            print(format_usage_bar("Session (5h):", five.get("utilization", 0), five.get("resets_at")))
+        seven = usage.get("seven_day")
+        if seven:
+            print(format_usage_bar("Weekly (7d):", seven.get("utilization", 0), seven.get("resets_at")))
+        opus = usage.get("seven_day_opus")
+        if opus:
+            print(format_usage_bar("Opus (7d):", opus.get("utilization", 0), opus.get("resets_at")))
         print()
 
 if __name__ == "__main__":
