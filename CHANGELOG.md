@@ -9,10 +9,10 @@ All notable changes to Father Time are documented here.
 - `--refresh` flag on usage_check.py to force a fresh API call
 - Refresh button in pace check menu after showing cached results
 - Rate limit bars now appear inline in session health output
-- Shared cache file (`~/.claude/usage_cache.json`) works across CC terminal and plugin
+- Shared cache file (`~/.claude/usage_cache.json`) — other tools can read/write the same cache
 
 ### Fixed
-- 429 errors when CC terminal and plugin both poll the usage API simultaneously
+- 429 errors when multiple tools poll the usage API simultaneously
 
 ## [1.4.0] — 2026-03-27
 
