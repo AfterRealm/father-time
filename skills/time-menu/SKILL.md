@@ -102,7 +102,12 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py" --threshold 800000
 
 If the user mentions their compaction threshold, pass it via `--threshold`. If numbers seem off, ask for their threshold.
 
-Present results clearly: context usage, compaction risk, cache efficiency, turn count.
+Present ALL data from the script output in a table. Include every field — do not omit anything:
+
+| Project | JSONL | Context | Risk | Compactions | Turns | Cache | Tokens |
+|---------|-------|---------|------|-------------|-------|-------|--------|
+
+Then show rate limits below the table if available.
 
 ### Session Timer
 

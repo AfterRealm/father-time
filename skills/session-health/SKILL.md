@@ -76,18 +76,12 @@ Ask the user for their threshold if the percentages seem off or if they mention 
 
 ## Response Format
 
-```
-Session Health:
-  JSONL: [size]
-  Context: [tokens] / [threshold] ([pct]%)
-  Compaction risk: [Low / Moderate / High / Imminent]
-  Compactions so far: [count]
-  Turns: [count]
-  Cache: [read] read / [write] write
-  Peak status: [PEAK / OFF-PEAK]
+Present ALL data from the script output in a table. Include every field — do not omit anything:
 
-[Recommendation if anything needs attention]
-```
+| Project | JSONL | Context | Risk | Compactions | Turns | Cache | Tokens |
+|---------|-------|---------|------|-------------|-------|-------|--------|
+
+Then show rate limits below the table if available. Follow with recommendations if anything needs attention.
 
 ## When to Warn
 
