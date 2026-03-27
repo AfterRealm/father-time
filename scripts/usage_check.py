@@ -21,10 +21,7 @@ CACHE_MAX_AGE = 300  # 5 minutes
 
 
 def get_cache_path():
-    """Get the cache file path in plugin data dir or fallback to temp."""
-    plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
-    if plugin_data:
-        return Path(plugin_data) / "usage_cache.json"
+    """Shared cache path — same location CC terminal uses."""
     return Path.home() / ".claude" / "usage_cache.json"
 
 

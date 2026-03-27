@@ -137,9 +137,7 @@ def parse_args():
     return threshold, project_filter
 
 def get_cache_path():
-    plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
-    if plugin_data:
-        return Path(plugin_data) / "usage_cache.json"
+    """Shared cache path — same location CC terminal uses."""
     return Path.home() / ".claude" / "usage_cache.json"
 
 def read_usage_cache():
