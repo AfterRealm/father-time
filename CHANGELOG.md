@@ -2,6 +2,15 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.7.0] — 2026-03-28
+
+### Added
+- **Current Session view** — `--current` flag shows only the active session instead of all projects
+- Session health menu now offers "Current Session" vs "All Sessions" choice
+
+### Fixed
+- Removed 5-project limit from session health — all active projects now shown
+
 ## [1.6.0] — 2026-03-27
 
 ### Added
