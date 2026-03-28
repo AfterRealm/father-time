@@ -285,7 +285,7 @@ def main():
 
     print("=== Session Health ===\n")
 
-    for project in sorted(projects, key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
+    for project in sorted(projects, key=lambda p: p.stat().st_mtime, reverse=True):
         session_file, size = find_current_session(project)
         if not session_file:
             continue
