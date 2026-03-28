@@ -43,13 +43,16 @@ Ask a follow-up with AskUserQuestion:
 **Header:** "Session"
 **Options:**
 
-1. **Label:** "Session Health"
-   **Description:** "Context usage, compaction risk, cache efficiency, token counts, and cost estimate"
+1. **Label:** "Current Session"
+   **Description:** "Health check for THIS session only"
 
-2. **Label:** "Session Timer"
+2. **Label:** "All Sessions"
+   **Description:** "Health check across all active projects"
+
+3. **Label:** "Session Timer"
    **Description:** "How long the current session has been running"
 
-3. **Label:** "Context Budget"
+4. **Label:** "Context Budget"
    **Description:** "Estimate token cost of a file or directory before reading it"
 
 Then run the appropriate capability below.
@@ -91,12 +94,21 @@ Then run the appropriate capability below.
 
 ## Capabilities
 
-### Session Health
+### Current Session
 
-Run the session health script:
+Run the session health script with `--current` to show only the active session:
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py" --current
+```
+
+### All Sessions
+
+Run the session health script to show all projects:
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py"
 ```
+
+### Session Health (shared rules for both)
 
 To override the compaction threshold (default 1M):
 ```bash
@@ -107,8 +119,8 @@ If the user mentions their compaction threshold, pass it via `--threshold`. If n
 
 Present ALL data from the script output in a table. Include every field — do not omit anything:
 
-| Project | JSONL | Context | Risk | Compactions | Turns | Cache | Tokens |
-|---------|-------|---------|------|-------------|-------|-------|--------|
+| Project | JSONL | Context | Risk | Compactions | Turns | Cache | Tokens | Cost |
+|---------|-------|---------|------|-------------|-------|-------|--------|------|
 
 Then show rate limits below the table if available.
 

@@ -9,7 +9,12 @@ Show the user real session health data — not estimates. Parse actual token cou
 
 ## How to Get Real Data
 
-Run the session health script:
+For current session only:
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py" --current
+```
+
+For all sessions:
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py"
 ```
@@ -18,6 +23,13 @@ For a specific project:
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py" "project-name-fragment"
 ```
+
+When invoked directly (not via time-menu), ask the user first with AskUserQuestion:
+**Question:** "Which sessions?"
+**Header:** "Health"
+**Options:**
+1. **Label:** "Current Session" **Description:** "Just this session"
+2. **Label:** "All Sessions" **Description:** "All active projects"
 
 To override the compaction threshold (default 1M):
 ```bash

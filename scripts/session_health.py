@@ -151,19 +151,23 @@ def calc_session_cost(stats, model="opus"):
     return cost
 
 def parse_args():
-    """Parse CLI args: optional --threshold N and optional project filter."""
+    """Parse CLI args: optional --threshold N, --current, and optional project filter."""
     threshold = 1_000_000
     project_filter = None
+    current_only = False
     args = sys.argv[1:]
     i = 0
     while i < len(args):
         if args[i] == '--threshold' and i + 1 < len(args):
             threshold = int(args[i + 1])
             i += 2
+        elif args[i] == '--current':
+            current_only = True
+            i += 1
         else:
             project_filter = args[i]
             i += 1
-    return threshold, project_filter
+    return threshold, project_filter, current_only
 
 def get_cache_path():
     """Shared cache path — same location CC terminal uses."""
@@ -279,13 +283,18 @@ def main():
         print("No Claude projects found.")
         return
 
-    threshold, project_filter = parse_args()
+    threshold, project_filter, current_only = parse_args()
     if project_filter:
         projects = [p for p in projects if project_filter.lower() in str(p).lower()]
 
-    print("=== Session Health ===\n")
+    sorted_projects = sorted(projects, key=lambda p: p.stat().st_mtime, reverse=True)
+    if current_only:
+        sorted_projects = sorted_projects[:1]
+        print("=== Current Session ===\n")
+    else:
+        print("=== Session Health ===\n")
 
-    for project in sorted(projects, key=lambda p: p.stat().st_mtime, reverse=True):
+    for project in sorted_projects:
         session_file, size = find_current_session(project)
         if not session_file:
             continue
