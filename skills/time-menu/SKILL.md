@@ -108,7 +108,7 @@ If toggling to enabled:
 rm -f "${CLAUDE_PLUGIN_DATA}/time_inject_disabled"
 ```
 
-Confirm the change. Time injection defaults to ENABLED on every new session (session_start.py clears the disable flag).
+Confirm the change. The toggle persists across resumes and new sessions until the user explicitly changes it.
 
 ### If "Work Patterns" is selected
 

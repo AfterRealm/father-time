@@ -15,11 +15,6 @@ def main():
 
     os.makedirs(data_dir, exist_ok=True)
 
-    # Reset time injection toggle (defaults to enabled each session)
-    disable_file = os.path.join(data_dir, "time_inject_disabled")
-    if os.path.exists(disable_file):
-        os.remove(disable_file)
-
     # Record session start time
     start_file = os.path.join(data_dir, "session_start.txt")
     with open(start_file, 'w') as f:
