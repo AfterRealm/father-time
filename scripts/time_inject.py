@@ -78,6 +78,11 @@ def get_session_duration():
     return None
 
 def main():
+    # Check session-level toggle (set via Father Time menu)
+    data_dir = os.environ.get("CLAUDE_PLUGIN_DATA", "")
+    if data_dir and os.path.exists(os.path.join(data_dir, "time_inject_disabled")):
+        return
+
     now = get_local_time()
 
     # Time string

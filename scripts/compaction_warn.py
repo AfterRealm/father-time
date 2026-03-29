@@ -57,6 +57,10 @@ def get_last_usage(jsonl_path):
 
 
 def main():
+    data_dir = os.environ.get("CLAUDE_PLUGIN_DATA", "")
+    if data_dir and os.path.exists(os.path.join(data_dir, "time_inject_disabled")):
+        return
+
     session = find_active_session()
     if not session:
         return

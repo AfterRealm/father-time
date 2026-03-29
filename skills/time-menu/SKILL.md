@@ -29,6 +29,9 @@ When this skill activates, use AskUserQuestion to present the user with a menu:
 3. **Label:** "Work Patterns"
    **Description:** "Activity patterns analysis and focus mode timer"
 
+4. **Label:** "Settings"
+   **Description:** "Enable/disable time injection for this session"
+
 The user can also select "Other" to ask a free-form question.
 
 If the user invoked this skill WITH a specific question (e.g., "how's my session health?"), skip the menu and go directly to the relevant capability.
@@ -75,6 +78,37 @@ Ask a follow-up with AskUserQuestion:
    **Description:** "Morning overview with peak status, patterns, and recommendations"
 
 Then run the appropriate capability below.
+
+### If "Settings" is selected
+
+Check the current state of time injection:
+```bash
+test -f "${CLAUDE_PLUGIN_DATA}/time_inject_disabled" && echo "DISABLED" || echo "ENABLED"
+```
+
+Then ask with AskUserQuestion:
+
+**Question:** "Time injection is currently [ENABLED/DISABLED]. Toggle it?"
+**Header:** "Settings"
+**Options:**
+
+1. **Label:** "Disable" (or "Enable" if currently disabled)
+   **Description:** "Stop (or resume) injecting time/peak/session info on every prompt"
+
+2. **Label:** "Keep Current"
+   **Description:** "Leave it as-is"
+
+If toggling to disabled:
+```bash
+touch "${CLAUDE_PLUGIN_DATA}/time_inject_disabled"
+```
+
+If toggling to enabled:
+```bash
+rm -f "${CLAUDE_PLUGIN_DATA}/time_inject_disabled"
+```
+
+Confirm the change. Time injection defaults to ENABLED on every new session (session_start.py clears the disable flag).
 
 ### If "Work Patterns" is selected
 

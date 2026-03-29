@@ -2,6 +2,16 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.8.0] — 2026-03-29
+
+### Added
+- **Per-session time injection toggle** — disable/enable all per-prompt hooks (time, compaction warnings) from the Father Time menu under Settings
+- Defaults to enabled on every new session, resets automatically on session start
+- Use case: disable in RP/creative sessions where OOC timestamps break immersion
+
+### Changed
+- Time menu now has 4 top-level options: Session, Time & Pacing, Work Patterns, Settings
+
 ## [1.7.0] — 2026-03-28
 
 ### Added
