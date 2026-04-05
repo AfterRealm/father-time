@@ -54,13 +54,15 @@ Anthropic's throttle window: **Weekdays 5:00 AM – 11:00 AM Pacific Time**
 
 ## Install
 
-Add the marketplace and install:
+Add the AfterRealm marketplace and install:
 ```bash
-claude plugin marketplace add AfterRealm/father-time
-claude plugin install father-time
+claude marketplace add AfterRealm/marketplace
+claude plugin add afterrealm/father-time
 ```
 
 Then restart Claude Code. All skills will be available globally.
+
+> Also available: [Blunt Cake](https://github.com/AfterRealm/blunt-cake) — brutal, funny code reviewer with 7 modes and 6 personalities. Both plugins live in the [AfterRealm marketplace](https://github.com/AfterRealm/marketplace).
 
 ## Requirements
 
