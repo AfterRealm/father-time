@@ -42,9 +42,9 @@ Use these prices per 1M tokens for the comparison:
 
 | Model | Input | Cache Read | Cache Write | Output |
 |-------|-------|------------|-------------|--------|
-| Opus | $15.00 | $1.50 | $18.75 | $75.00 |
-| Sonnet | $3.00 | $0.30 | $3.75 | $15.00 |
-| Haiku | $0.80 | $0.08 | $1.00 | $4.00 |
+| Opus 4.6 | $5.00 | $0.50 | $6.25 | $25.00 |
+| Sonnet 4.6 | $3.00 | $0.30 | $3.75 | $15.00 |
+| Haiku 4.5 | $1.00 | $0.10 | $1.25 | $5.00 |
 
 - "First time" = input price (first read, not yet cached)
 - "Cached" = cache read price (subsequent reads in same session)

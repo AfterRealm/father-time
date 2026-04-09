@@ -2,6 +2,11 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.8.1] — 2026-03-29
+
+### Fixed
+- Toggle persistence bug — time injection disable/enable toggle was being cleared on every session resume (SessionStart hook fires on resume too). Toggle now persists across resumes and new sessions until explicitly changed via Settings menu.
+
 ## [1.8.0] — 2026-03-29
 
 ### Added
