@@ -2,6 +2,13 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.8.2] — 2026-04-09
+
+### Fixed
+- Updated Opus 4.6 pricing in context-budget skill ($15 → $5 per 1M input tokens)
+- Added missing v1.8.1 changelog entry (toggle persistence fix)
+- Synced scripts/ folder to AfterRealm marketplace (hooks were silently failing for marketplace installs)
+
 ## [1.8.1] — 2026-03-29
 
 ### Fixed
