@@ -40,6 +40,7 @@ Ask a follow-up using AskUserQuestion:
 
 1. **Session Health** — "Context usage, compaction risk, cache efficiency, and token counts from JSONL"
 2. **Session Timer** — "How long the current session has been running"
+3. **Context Budget** — "Estimate token cost of reading a file or directory before doing it"
 
 Then run the appropriate capability.
 
@@ -97,6 +98,9 @@ Present the results clearly: context usage, compaction risk, cache efficiency, t
 
 ### Session Timer
 Read session start time from `${CLAUDE_PLUGIN_DATA}/session_start.txt` and calculate duration. Report how long the session has been active.
+
+### Context Budget
+Estimate the token cost of reading a file or directory before doing it. Use the `wc -c` rule of thumb (1 token ≈ 4 characters) and present a per-model cost comparison (Opus / Sonnet / Haiku, both first-time and cached). The full pricing table and impact thresholds live in the context-budget skill — invoke that skill for detailed estimates rather than reimplementing the math here.
 
 ### Peak Hour Awareness
 Anthropic throttles session limits during peak hours: **weekdays 5am-11am PT**.

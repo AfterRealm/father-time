@@ -1,290 +1,368 @@
 """
 Father Time — Usage check.
-Fetches real rate limit data from the Anthropic OAuth API.
-Returns session (5-hour), weekly (7-day), and Opus-specific utilization.
-Caches results to avoid API rate limits. Use --refresh to force a fresh fetch.
+
+Fetches real rate-limit data from the Anthropic OAuth API. Returns 5-hour
+session, 7-day weekly, and Opus-specific utilization with reset timers and
+a burn-rate forecast. Caches results for 5 minutes to avoid hammering the API.
+
+Compliant with agentskills.io "Designing scripts for agentic use" rules:
+  - argparse-based --help documents the interface, flags, and exit codes
+  - --format human|json supports both human-readable and structured output
+  - Diagnostics go to stderr, data goes to stdout
+  - Meaningful exit codes (see EXIT CODES section in --help)
+  - No interactive prompts
+  - Forecast fields always return a consistent dict shape with a `status` key
+    (no polymorphic string-or-dict ambiguity for JSON consumers)
+
+Shared helpers (OAuth, cache, formatting) live in _father_time_lib.py.
 """
-import os
-import sys
+import argparse
 import json
-import urllib.request
-import urllib.error
-from pathlib import Path
+import sys
 from datetime import datetime
-import time
+from pathlib import Path
 
-# Fix Windows encoding for Unicode output
-if sys.stdout.encoding != "utf-8":
-    sys.stdout.reconfigure(encoding="utf-8")
+# Make the shared lib importable regardless of cwd.
+sys.path.insert(0, str(Path(__file__).parent))
 
-CACHE_MAX_AGE = 300  # 5 minutes
+from _father_time_lib import (  # noqa: E402
+    FIVE_HOUR_WINDOW_MINUTES,
+    PROGRESS_BAR_LENGTH,
+    SEVEN_DAY_WINDOW_HOURS,
+    SOURCE_LABELS,
+    fetch_usage_with_fallback,
+    format_reset,
+)
 
-
-def get_cache_path():
-    """Shared cache path — same location CC terminal uses."""
-    return Path.home() / ".claude" / "usage_cache.json"
-
-
-def read_cache():
-    """Read cached usage data if fresh enough."""
-    cache_path = get_cache_path()
-    try:
-        if not cache_path.exists():
-            return None
-        data = json.loads(cache_path.read_text(encoding="utf-8"))
-        age = time.time() - data.get("fetched_at", 0)
-        if age < CACHE_MAX_AGE:
-            data["_from_cache"] = True
-            data["_cache_age"] = int(age)
-            return data
-    except Exception:
-        pass
-    return None
+# ──────────────────────────────────────────────────────────────────────────
+# Exit codes
+# ──────────────────────────────────────────────────────────────────────────
+EXIT_OK = 0
+EXIT_NO_TOKEN = 1
+EXIT_API_FAILED = 2
+# 64+ reserved for argparse usage errors
 
 
-def write_cache(data):
-    """Write usage data to cache file."""
-    cache_path = get_cache_path()
-    try:
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
-        data["fetched_at"] = time.time()
-        cache_path.write_text(json.dumps(data), encoding="utf-8")
-    except Exception:
-        pass
+# ──────────────────────────────────────────────────────────────────────────
+# Forecast computation (data-only, no formatting)
+# ──────────────────────────────────────────────────────────────────────────
+# Forecast field shape (consistent across both window types):
+#
+#   {
+#     "status": "ok" | "reached" | "unlikely_before_reset" | "idle" | "no_data",
+#     "minutes_to_full": int | None,   # only set when status == "ok"
+#     "hours_to_full":   float | None, # only set when status == "ok"
+#   }
+#
+# Status meanings:
+#   - "ok"                     — burn rate computed; field has minutes/hours_to_full
+#   - "reached"                — utilization is at or past 100%
+#   - "unlikely_before_reset"  — at current pace, won't hit 100% before window resets
+#   - "idle"                   — utilization is exactly 0%, no burn rate to forecast
+#   - "no_data"                — API returned nothing for this window (or parse error)
+#
+# Agents always see the same keys. Branch on `status`, never type-check the field.
+def _empty_forecast_field():
+    return {"status": "no_data", "minutes_to_full": None, "hours_to_full": None}
 
 
-def get_oauth_token():
-    """Find the OAuth token from Claude's credential files."""
-    home = Path.home()
-    paths = [
-        home / ".claude" / ".credentials.json",
-        home / ".claude" / "credentials.json",
-    ]
-    appdata = os.environ.get("APPDATA", "")
-    if appdata:
-        paths.append(Path(appdata) / "claude" / "credentials.json")
-
-    for p in paths:
-        try:
-            data = json.loads(p.read_text(encoding="utf-8"))
-            token = data.get("claudeAiOauth", {}).get("accessToken")
-            if token:
-                return token
-        except Exception:
-            continue
-    return None
+def _idle_forecast_field():
+    return {"status": "idle", "minutes_to_full": None, "hours_to_full": None}
 
 
-def fetch_usage(token):
-    """Hit the Anthropic usage API and return parsed data."""
-    req = urllib.request.Request(
-        "https://api.anthropic.com/api/oauth/usage",
-        headers={
-            "Accept": "application/json",
-            "Authorization": f"Bearer {token}",
-            "anthropic-beta": "oauth-2025-04-20",
-            "User-Agent": "claude-code/2.0.32",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        print(f"Error: API returned {e.code}", file=sys.stderr)
-        return None
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return None
+def compute_forecast(data):
+    forecast = {
+        "session_5h": _empty_forecast_field(),
+        "weekly_7d": _empty_forecast_field(),
+        "burn_rate_pct_per_day": None,
+        "budget_remaining_pct": None,
+        "days_to_weekly_reset": None,
+    }
 
-
-def format_reset(resets_at):
-    """Format a reset timestamp into a readable string."""
-    if not resets_at:
-        return "unknown"
-    try:
-        reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
-        now = datetime.now(reset_dt.tzinfo)
-        delta = reset_dt - now
-        total_minutes = int(delta.total_seconds() / 60)
-        if total_minutes < 0:
-            return "resetting soon"
-        hours = total_minutes // 60
-        minutes = total_minutes % 60
-        if hours > 0:
-            return f"{hours}h {minutes}m"
-        return f"{minutes}m"
-    except Exception:
-        return resets_at
-
-
-def main():
-    force_refresh = "--refresh" in sys.argv
-
-    # Try cache first (unless --refresh)
-    data = None
-    from_cache = False
-    if not force_refresh:
-        cached = read_cache()
-        if cached:
-            data = cached
-            from_cache = True
-
-    # Fetch from API if no cache
-    if not data:
-        token = get_oauth_token()
-        if not token:
-            print("Error: No OAuth token found. Make sure you're logged into Claude Code.")
-            sys.exit(1)
-
-        data = fetch_usage(token)
-        if data:
-            write_cache(data)
-        else:
-            # API failed — try stale cache as fallback
-            stale = read_cache() if not force_refresh else None
-            if not stale:
-                # Try reading cache ignoring age
-                cache_path = get_cache_path()
-                try:
-                    stale = json.loads(cache_path.read_text(encoding="utf-8"))
-                    stale["_from_cache"] = True
-                    stale["_cache_age"] = int(time.time() - stale.get("fetched_at", 0))
-                except Exception:
-                    stale = None
-            if stale:
-                data = stale
-                from_cache = True
-                print("(API unavailable — showing cached data)\n", file=sys.stderr)
-            else:
-                print("Error: Could not fetch usage data.")
-                sys.exit(1)
-
-    # Header
-    if from_cache:
-        age = data.get("_cache_age", 0)
-        print(f"=== Rate Limits === (cached {age}s ago)\n")
-    else:
-        print("=== Rate Limits === (live)\n")
-
-    # Session (5-hour)
+    # ── 5-hour window
     five = data.get("five_hour")
-    if five:
+    if five is not None:
         pct = five.get("utilization", 0)
-        resets = format_reset(five.get("resets_at"))
-        bar_len = 20
-        filled = int(pct / 100 * bar_len)
-        bar = "\u2588" * filled + "\u2591" * (bar_len - filled)
-        print(f"Session (5h):  [{bar}] {pct:.1f}%")
-        print(f"  Resets in: {resets}")
-    else:
-        print("Session (5h):  no data")
-
-    # Weekly (7-day)
-    seven = data.get("seven_day")
-    if seven:
-        pct = seven.get("utilization", 0)
-        resets = format_reset(seven.get("resets_at"))
-        bar_len = 20
-        filled = int(pct / 100 * bar_len)
-        bar = "\u2588" * filled + "\u2591" * (bar_len - filled)
-        print(f"Weekly (7d):   [{bar}] {pct:.1f}%")
-        print(f"  Resets in: {resets}")
-    else:
-        print("Weekly (7d):   no data")
-
-    # Opus (7-day)
-    opus = data.get("seven_day_opus")
-    if opus:
-        pct = opus.get("utilization", 0)
-        resets = format_reset(opus.get("resets_at"))
-        bar_len = 20
-        filled = int(pct / 100 * bar_len)
-        bar = "\u2588" * filled + "\u2591" * (bar_len - filled)
-        print(f"Opus (7d):     [{bar}] {pct:.1f}%")
-        print(f"  Resets in: {resets}")
-
-    # Forecast section
-    print("\n=== Forecast ===\n")
-    five = data.get("five_hour")
-    if five and five.get("utilization", 0) > 0:
-        pct = five["utilization"]
         resets_at = five.get("resets_at")
-        if resets_at:
+        if pct == 0:
+            forecast["session_5h"] = _idle_forecast_field()
+        elif pct < 0:
+            # Garbage from API; treat as no_data
+            pass
+        elif resets_at:
             try:
                 reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
                 now = datetime.now(reset_dt.tzinfo)
                 remaining_min = max(0, (reset_dt - now).total_seconds() / 60)
-                # How long until 100% at current burn rate
-                if pct < 100 and remaining_min > 0:
-                    # Rate: pct% used in (300 - remaining_min) minutes
-                    elapsed_min = 300 - remaining_min  # 5h window = 300 min
+                if pct >= 100:
+                    forecast["session_5h"] = {
+                        "status": "reached",
+                        "minutes_to_full": 0,
+                        "hours_to_full": 0.0,
+                    }
+                elif remaining_min > 0:
+                    elapsed_min = FIVE_HOUR_WINDOW_MINUTES - remaining_min
                     if elapsed_min > 0:
                         rate_per_min = pct / elapsed_min
-                        mins_to_full = (100 - pct) / rate_per_min if rate_per_min > 0 else float('inf')
-                        if mins_to_full < 300:
-                            h = int(mins_to_full) // 60
-                            m = int(mins_to_full) % 60
-                            if h > 0:
-                                print(f"  Session limit: ~{h}h {m}m until full at current pace")
+                        if rate_per_min > 0:
+                            mins_to_full = (100 - pct) / rate_per_min
+                            if mins_to_full < remaining_min:
+                                forecast["session_5h"] = {
+                                    "status": "ok",
+                                    "minutes_to_full": int(mins_to_full),
+                                    "hours_to_full": round(mins_to_full / 60, 2),
+                                }
                             else:
-                                print(f"  Session limit: ~{m}m until full at current pace")
-                        else:
-                            print(f"  Session limit: unlikely to hit before reset")
-                elif pct >= 100:
-                    print(f"  Session limit: REACHED — resets in {format_reset(resets_at)}")
+                                forecast["session_5h"] = {
+                                    "status": "unlikely_before_reset",
+                                    "minutes_to_full": None,
+                                    "hours_to_full": None,
+                                }
             except Exception:
                 pass
 
+    # ── 7-day window
     seven = data.get("seven_day")
-    if seven and seven.get("utilization", 0) > 0:
-        pct = seven["utilization"]
+    if seven is not None:
+        pct = seven.get("utilization", 0)
         resets_at = seven.get("resets_at")
-        if resets_at:
+        if pct == 0:
+            # User hasn't burned anything yet — emit explicit zeros so JSON
+            # consumers can distinguish "0% used" from "data missing"
+            forecast["weekly_7d"] = _idle_forecast_field()
+            forecast["burn_rate_pct_per_day"] = 0.0
+            forecast["budget_remaining_pct"] = 100.0
+            if resets_at:
+                try:
+                    reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
+                    now = datetime.now(reset_dt.tzinfo)
+                    remaining_hours = max(0, (reset_dt - now).total_seconds() / 3600)
+                    forecast["days_to_weekly_reset"] = round(remaining_hours / 24, 2)
+                except Exception:
+                    pass
+        elif pct < 0:
+            # Garbage from API; treat as no_data
+            pass
+        elif resets_at:
             try:
                 reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
                 now = datetime.now(reset_dt.tzinfo)
                 remaining_hours = max(0, (reset_dt - now).total_seconds() / 3600)
-                total_hours = 168  # 7 days
-                elapsed_hours = total_hours - remaining_hours
-                if elapsed_hours > 0 and pct < 100:
+                elapsed_hours = SEVEN_DAY_WINDOW_HOURS - remaining_hours
+                if pct >= 100:
+                    forecast["weekly_7d"] = {
+                        "status": "reached",
+                        "minutes_to_full": 0,
+                        "hours_to_full": 0.0,
+                    }
+                elif elapsed_hours > 0:
                     rate_per_hour = pct / elapsed_hours
-                    hours_to_full = (100 - pct) / rate_per_hour if rate_per_hour > 0 else float('inf')
-                    days = int(hours_to_full) // 24
-                    hours = int(hours_to_full) % 24
-                    if hours_to_full > remaining_hours:
-                        print(f"  Weekly limit: unlikely to hit before reset")
-                    elif days > 0:
-                        print(f"  Weekly limit: ~{days}d {hours}h until full at current pace")
-                    else:
-                        print(f"  Weekly limit: ~{hours}h until full at current pace")
-                elif pct >= 100:
-                    print(f"  Weekly limit: REACHED — resets in {format_reset(resets_at)}")
-            except Exception:
-                pass
+                    if rate_per_hour > 0:
+                        hours_to_full = (100 - pct) / rate_per_hour
+                        if hours_to_full > remaining_hours:
+                            forecast["weekly_7d"] = {
+                                "status": "unlikely_before_reset",
+                                "minutes_to_full": None,
+                                "hours_to_full": None,
+                            }
+                        else:
+                            forecast["weekly_7d"] = {
+                                "status": "ok",
+                                "minutes_to_full": int(hours_to_full * 60),
+                                "hours_to_full": round(hours_to_full, 2),
+                            }
 
-    # Burn rate for subscription users
-    if seven and seven.get("utilization", 0) > 0:
-        pct = seven["utilization"]
-        resets_at = seven.get("resets_at")
-        if resets_at:
-            try:
-                reset_dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
-                now = datetime.now(reset_dt.tzinfo)
-                remaining_hours = max(0, (reset_dt - now).total_seconds() / 3600)
-                total_hours = 168
-                elapsed_hours = total_hours - remaining_hours
+                # Burn-rate metrics (only meaningful when pct > 0; the pct == 0
+                # branch above populates these explicitly with zero/full values)
                 days_elapsed = elapsed_hours / 24
-                days_remaining = remaining_hours / 24
                 if days_elapsed > 0:
-                    daily_rate = pct / days_elapsed
-                    budget_remaining = 100 - pct
-                    print(f"\n  Burn rate: {daily_rate:.1f}%/day ({budget_remaining:.0f}% budget left, {days_remaining:.1f} days to reset)")
+                    forecast["burn_rate_pct_per_day"] = round(pct / days_elapsed, 2)
+                    forecast["budget_remaining_pct"] = round(100 - pct, 2)
+                    forecast["days_to_weekly_reset"] = round(remaining_hours / 24, 2)
             except Exception:
                 pass
 
-    # Output raw JSON for debugging if --json flag passed
-    if "--json" in sys.argv:
-        print(f"\nRaw: {json.dumps(data, indent=2)}")
+    return forecast
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Output (human + JSON)
+# ──────────────────────────────────────────────────────────────────────────
+def _bar_line(label, slot):
+    if not slot:
+        print(f"{label}  no data")
+        return
+    pct = slot.get("utilization", 0)
+    filled = int(pct / 100 * PROGRESS_BAR_LENGTH)
+    bar = "\u2588" * filled + "\u2591" * (PROGRESS_BAR_LENGTH - filled)
+    print(f"{label}  [{bar}] {pct:.1f}%")
+    print(f"  Resets in: {format_reset(slot.get('resets_at'))}")
+
+
+def _human_forecast_line(label, field):
+    status = field["status"]
+    if status == "reached":
+        print(f"  {label}: REACHED")
+    elif status == "unlikely_before_reset":
+        print(f"  {label}: unlikely to hit before reset")
+    elif status == "idle":
+        print(f"  {label}: idle (0% used, no burn rate to forecast)")
+    elif status == "ok":
+        m = field["minutes_to_full"]
+        if m is None:
+            return
+        h = m // 60
+        mm = m % 60
+        if h >= 24:
+            d = h // 24
+            hh = h % 24
+            print(f"  {label}: ~{d}d {hh}h until full at current pace")
+        elif h > 0:
+            print(f"  {label}: ~{h}h {mm}m until full at current pace")
+        else:
+            print(f"  {label}: ~{mm}m until full at current pace")
+    # status == "no_data" → print nothing
+
+
+def emit_human(data, forecast, source=None):
+    """Print the human-readable report.
+
+    Uses the same SOURCE_LABELS lookup as session_health.py so freshness
+    UX is consistent across the plugin. Includes cache age detail when
+    available because usage_check is the canonical "how fresh is my data"
+    tool.
+    """
+    source_label = SOURCE_LABELS.get(source, source or "?")
+    from_cache = data.get("_from_cache")
+    cache_age = data.get("_cache_age", 0)
+    if from_cache:
+        print(f"=== Rate Limits ({source_label}, {cache_age}s old) ===\n")
+    else:
+        print(f"=== Rate Limits ({source_label}) ===\n")
+
+    _bar_line("Session (5h):", data.get("five_hour"))
+    _bar_line("Weekly (7d): ", data.get("seven_day"))
+    opus = data.get("seven_day_opus")
+    if opus:
+        _bar_line("Opus (7d):   ", opus)
+
+    print("\n=== Forecast ===\n")
+    _human_forecast_line("Session limit", forecast["session_5h"])
+    _human_forecast_line("Weekly limit", forecast["weekly_7d"])
+
+    if forecast.get("burn_rate_pct_per_day") is not None:
+        print(
+            f"\n  Burn rate: {forecast['burn_rate_pct_per_day']:.1f}%/day "
+            f"({forecast['budget_remaining_pct']:.0f}% budget left, "
+            f"{forecast['days_to_weekly_reset']:.1f} days to reset)"
+        )
+
+
+def emit_json(data, forecast):
+    out = {
+        "fetched_at": datetime.now().astimezone().isoformat(),
+        "from_cache": bool(data.get("_from_cache")),
+        "cache_age_seconds": data.get("_cache_age") if data.get("_from_cache") else None,
+        "five_hour": data.get("five_hour"),
+        "seven_day": data.get("seven_day"),
+        "seven_day_opus": data.get("seven_day_opus"),
+        "forecast": forecast,
+    }
+    json.dump(out, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Argparse
+# ──────────────────────────────────────────────────────────────────────────
+def build_parser():
+    parser = argparse.ArgumentParser(
+        prog="usage_check.py",
+        description=(
+            "Father Time usage checker. Fetches Anthropic rate-limit data "
+            "(session 5h, weekly 7d, Opus 7d) plus a burn-rate forecast. "
+            "Caches results for 5 minutes to avoid API hammering."
+        ),
+        epilog=(
+            "Exit codes:\n"
+            "  0  success\n"
+            "  1  no OAuth token found (not logged into Claude Code?)\n"
+            "  2  API fetch failed AND no cache fallback available\n"
+            " 64+ argparse usage errors\n\n"
+            "JSON forecast field shape:\n"
+            "  Each forecast field (session_5h, weekly_7d) is always an object\n"
+            "  with the same keys:\n"
+            "    {\n"
+            "      \"status\": \"ok\" | \"reached\" | \"unlikely_before_reset\" | \"idle\" | \"no_data\",\n"
+            "      \"minutes_to_full\": int | null,\n"
+            "      \"hours_to_full\":   float | null\n"
+            "    }\n"
+            "  Status meanings:\n"
+            "    ok                    — burn rate computed; minutes/hours_to_full set\n"
+            "    reached               — utilization >= 100%\n"
+            "    unlikely_before_reset — won't hit 100% before window resets\n"
+            "    idle                  — 0% used, no burn rate to forecast\n"
+            "    no_data               — API returned nothing for this window\n"
+            "  Branch on `status`, never type-check the field itself.\n\n"
+            "Examples:\n"
+            "  usage_check.py\n"
+            "  usage_check.py --refresh\n"
+            "  usage_check.py --format json\n"
+            "  usage_check.py --refresh --format json\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--format",
+        choices=["human", "json"],
+        default="human",
+        help="Output format. 'human' (default) prints a formatted report. "
+             "'json' emits a structured object on stdout for programmatic consumption.",
+    )
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Force a fresh fetch from the API, ignoring the cache.",
+    )
+    return parser
+
+
+def main():
+    if sys.stdout.encoding != "utf-8":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+    parser = build_parser()
+    args = parser.parse_args()
+
+    # Single source of truth: lib's fetch_usage_with_fallback handles
+    # cache → API → stale-cache → no-token-fallback. We map source labels
+    # to exit codes for distinct failure reporting.
+    data, source = fetch_usage_with_fallback(force_refresh=args.refresh)
+    if data is None:
+        if source == "no_token":
+            print(
+                "error: no OAuth token found — make sure you're logged into Claude Code",
+                file=sys.stderr,
+            )
+            sys.exit(EXIT_NO_TOKEN)
+        # source == "api_failed"
+        print(
+            "error: usage API failed and no cache fallback available",
+            file=sys.stderr,
+        )
+        sys.exit(EXIT_API_FAILED)
+
+    forecast = compute_forecast(data)
+
+    if args.format == "json":
+        emit_json(data, forecast)
+    else:
+        emit_human(data, forecast, source)
+
+    sys.exit(EXIT_OK)
 
 
 if __name__ == "__main__":

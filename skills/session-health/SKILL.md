@@ -41,6 +41,13 @@ Combined:
 python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py" --threshold 800000 "project-name-fragment"
 ```
 
+For structured output (programmatic consumption — preferred when you need to extract specific fields rather than display them):
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py" --format json --current
+```
+
+Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/session_health.py" --help` for the full flag and exit-code reference.
+
 The script parses JSONL transcripts and reads actual `usage` blocks from API responses to get:
 - **Real context usage** — `input_tokens + cache_read_input_tokens + cache_creation_input_tokens` from the last assistant turn = actual context window size
 - **JSONL file size** — total transcript weight

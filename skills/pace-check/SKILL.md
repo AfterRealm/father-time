@@ -19,6 +19,13 @@ To force a fresh fetch (bypass cache):
 python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py" --refresh
 ```
 
+For structured output (programmatic consumption):
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py" --format json
+```
+
+Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/usage_check.py" --help` for the full flag and exit-code reference.
+
 Results are cached for 5 minutes to avoid API rate limits. The output shows whether data is live or cached.
 
 This fetches real utilization data from `api.anthropic.com/api/oauth/usage` using the user's OAuth token. It returns:
