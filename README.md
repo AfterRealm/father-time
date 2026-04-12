@@ -57,8 +57,8 @@ Anthropic's throttle window: **Weekdays 5:00 AM – 11:00 AM Pacific Time**
 
 Add the AfterRealm marketplace and install:
 ```bash
-claude marketplace add AfterRealm/marketplace
-claude plugin add afterrealm/father-time
+claude plugin marketplace add AfterRealm/marketplace
+claude plugin install father-time@afterrealm
 ```
 
 Then restart Claude Code. All skills will be available globally.
