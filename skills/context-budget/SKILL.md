@@ -1,6 +1,10 @@
 ---
 name: context-budget
 description: Estimate the token cost of reading a file or directory before doing it. Use when asking "how many tokens would this cost", "how big is this file in tokens", or before reading large files.
+license: MIT
+metadata:
+  author: AfterRealm
+  version: "1.8.3"
 ---
 
 # Context Budget — Token Estimation

@@ -1,6 +1,10 @@
 ---
 name: session-health
 description: Check your current session's health — real context usage from JSONL token data, compaction proximity, session weight, and rate limit status. Use when asking about session size, compaction, context window, or rate limits.
+license: MIT
+metadata:
+  author: AfterRealm
+  version: "1.8.3"
 ---
 
 # Session Health Check

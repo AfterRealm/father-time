@@ -6,6 +6,10 @@ description: >
   patterns, focus mode, or wants a daily briefing. Also use when the user
   says "father time" or asks about their session duration, context usage,
   or compaction status.
+license: MIT
+metadata:
+  author: AfterRealm
+  version: "1.8.3"
 ---
 
 # Father Time

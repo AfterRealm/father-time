@@ -1,6 +1,10 @@
 ---
 name: pace-check
 description: Check real rate limit usage from the Anthropic API — session (5-hour), weekly, and Opus utilization. Use when asking about rate limits, pacing, token usage, or how much runway you have left.
+license: MIT
+metadata:
+  author: AfterRealm
+  version: "1.8.3"
 ---
 
 # Pace Check — Rate Limit Status

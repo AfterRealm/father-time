@@ -1,6 +1,10 @@
 ---
 name: daily-brief
 description: Get a morning briefing with peak hour status, schedule outlook, and work recommendations for the day. Use at the start of a new day or when asking for a daily summary.
+license: MIT
+metadata:
+  author: AfterRealm
+  version: "1.8.3"
 ---
 
 # Daily Briefing
