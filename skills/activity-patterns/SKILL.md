@@ -1,10 +1,10 @@
 ---
 name: activity-patterns
-description: Analyze your work patterns over time — when you typically work, peak vs off-peak usage, night owl detection. Use when asking about work habits, schedule patterns, or optimal work times.
+description: Analyze your work patterns over time — when you typically work, peak vs off-peak usage, night owl detection. Use when asking about work habits, schedule patterns, optimal work times, "am I a night owl", "when do I actually work", weekday vs weekend ratios, or questions about self-observation of work rhythm.
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.8.3"
+  version: "1.9.0"
 ---
 
 # Activity Patterns

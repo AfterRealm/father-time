@@ -34,7 +34,7 @@ A time-aware assistant that can answer questions about scheduling, pacing, and w
 | `/father-time:focus-mode` | Focus timer with presets (pomodoro 25m, deep-work 90m, sprint 45m, marathon 3h). Non-intrusive. |
 | `/father-time:activity-patterns` | Analyze your work patterns over time. Night owl? Early bird? How much do you overlap with peak hours? |
 | `/father-time:session-health` | Session JSONL size, context window usage estimate, compaction proximity, and rate limit status. |
-| `/father-time:context-budget` | Estimate the token cost of reading a file or directory before doing it. Includes per-model cost comparison (Opus / Sonnet / Haiku). |
+| `/father-time:context-budget` | Estimate the token cost of reading a file or directory before doing it. Includes per-model cost comparison (Opus 4.7 / 4.6 / Sonnet 4.6 / Haiku 4.5), Opus 4.7 tokenizer headroom, and 1M-context notes. |
 
 ## Peak Hours by Timezone
 

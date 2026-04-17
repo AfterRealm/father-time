@@ -1,10 +1,10 @@
 ---
 name: pace-check
-description: Check real rate limit usage from the Anthropic API — session (5-hour), weekly, and Opus utilization. Use when asking about rate limits, pacing, token usage, or how much runway you have left.
+description: Check real rate limit usage from the Anthropic API — session (5-hour), weekly, and Opus utilization. Use when asking about rate limits, pacing, token usage, "how much runway do I have", "should I keep working", "am I burning too fast", "will I hit my limit", or wanting a forecast of remaining subscription budget.
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.8.3"
+  version: "1.9.0"
 ---
 
 # Pace Check — Rate Limit Status
@@ -69,6 +69,7 @@ Rate Limits:
 ## Tips to Share When Usage is High
 
 - Switch to Sonnet for routine tasks (`/model sonnet`) — uses fewer tokens
+- If on Opus 4.7 at `xhigh` effort, consider stepping down to `high` or `medium` via `/effort` — xhigh burns significantly more tokens per turn
 - Use `/compact` to reduce context size
 - Shift heavy work to off-peak hours
 - If rate limited: wait 15-30 minutes, limits roll over continuously

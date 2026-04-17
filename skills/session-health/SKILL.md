@@ -1,10 +1,10 @@
 ---
 name: session-health
-description: Check your current session's health — real context usage from JSONL token data, compaction proximity, session weight, and rate limit status. Use when asking about session size, compaction, context window, or rate limits.
+description: Check your current session's health — real context usage from JSONL token data, compaction proximity, session weight, and rate limit status. Use when asking about session size, compaction, context window, rate limits, "how big is my session", "how close to compaction", or "should I checkpoint".
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.8.3"
+  version: "1.9.0"
 ---
 
 # Session Health Check
@@ -74,7 +74,11 @@ The JSONL contains usage data on every assistant message:
 
 **Real context size = input_tokens + cache_read + cache_creation** from the last turn. This is the actual number of tokens sent to the API, which equals the current context window usage.
 
-The default context window is 1M (Opus 4.6), but compaction may trigger earlier depending on the user's settings.
+Context window size depends on the model variant:
+- `claude-opus-4-7`, `claude-opus-4-6`, `claude-sonnet-4-6`: **200K tokens** (default)
+- `claude-opus-4-7[1m]`, `claude-opus-4-6[1m]`, `claude-sonnet-4-6[1m]`: **1M tokens** (explicit 1M-context variant)
+
+The script defaults to a 1M threshold but compaction may trigger earlier depending on the user's settings. Pass `--threshold` with their actual context window size if you know it.
 
 - **context_pct = real_context / threshold × 100**
 - Default threshold: 1,000,000 tokens

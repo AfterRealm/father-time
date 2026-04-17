@@ -66,14 +66,18 @@ SOURCE_LABELS = {
 # current. Source: https://platform.claude.com/docs/en/about-claude/pricing
 #
 # Pricing reflects the current Claude 4.x generation:
-#   - Opus    = Claude Opus 4.6   ($5 input / $25 output / $0.50 cache read / $6.25 cache write 5m)
-#   - Sonnet  = Claude Sonnet 4.6 ($3 input / $15 output / $0.30 cache read / $3.75 cache write 5m)
-#   - Haiku   = Claude Haiku 4.5  ($1 input / $5  output / $0.10 cache read / $1.25 cache write 5m)
+#   - Opus    = Claude Opus 4.7 / 4.6 ($5 input / $25 output / $0.50 cache read / $6.25 cache write 5m — 4.7 and 4.6 share per-token pricing)
+#   - Sonnet  = Claude Sonnet 4.6     ($3 input / $15 output / $0.30 cache read / $3.75 cache write 5m)
+#   - Haiku   = Claude Haiku 4.5      ($1 input / $5  output / $0.10 cache read / $1.25 cache write 5m)
+#
+# Note: Opus 4.7 uses a new tokenizer that can use up to 35% more tokens for the
+# same text vs. prior models. Cost-per-token is identical; cost-per-task may be
+# slightly higher on 4.7 due to the token count difference.
 #
 # cache_write is the 5-minute ephemeral tier (1.25x input price). The 1-hour
 # tier (2x input price) isn't tracked because Father Time's cost calculations
 # only need the standard 5-minute write rate.
-MODEL_PRICING_LAST_VERIFIED = "2026-04-11"
+MODEL_PRICING_LAST_VERIFIED = "2026-04-17"
 MODEL_PRICING = {
     "opus":   {"input": 5.00, "cache_read": 0.50, "cache_write": 6.25, "output": 25.00},
     "sonnet": {"input": 3.00, "cache_read": 0.30, "cache_write": 3.75, "output": 15.00},

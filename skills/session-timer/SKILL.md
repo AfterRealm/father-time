@@ -1,10 +1,10 @@
 ---
 name: session-timer
-description: Check how long the current session has been running. Use when asking about session length, duration, or whether it's time to checkpoint.
+description: Check how long the current session has been running. Use when asking about session length, duration, "how long have I been at this", "how long have I been working", whether it's time to checkpoint, or any time-since-start question.
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.8.3"
+  version: "1.9.0"
 ---
 
 # Session Timer

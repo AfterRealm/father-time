@@ -2,6 +2,29 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.9.0] — 2026-04-17
+
+### Changed
+- **Opus 4.7 awareness across the plugin.** Claude Opus 4.7 shipped 2026-04-16 with an `xhigh` effort level and auto mode for Max subscribers. Updated the plugin to reflect it:
+  - **`context-budget`:** Pricing table now includes Opus 4.7 explicitly (same per-token pricing as 4.6 — $5 input, $0.50 cache read, $6.25 cache write 5m, $25 output). Added a tokenizer note: Opus 4.7 uses a new tokenizer that can produce up to 35% more tokens for the same text, so token estimates should add ~35% headroom when the user is on 4.7. Documented that the `[1m]` 1M-context variants (`claude-opus-4-7[1m]`, `claude-opus-4-6[1m]`, `claude-sonnet-4-6[1m]`) ship at standard pricing — no long-context premium.
+  - **`session-health`:** Fixed the "default context window is 1M (Opus 4.6)" language that was wrong on two axes. Base models (`claude-opus-4-7`, `claude-opus-4-6`, `claude-sonnet-4-6`) default to 200K context; 1M is the explicit `[1m]` variant. Skill now documents both and tells the agent to pass `--threshold` with the actual window size when known.
+  - **`pace-check`:** Added a high-usage tip that mentions `xhigh` effort burns more tokens per turn — if the user is at `xhigh` on Opus 4.7 and close to their limit, stepping down to `high` or `medium` via `/effort` will stretch their budget.
+  - **`scripts/_father_time_lib.py`:** `MODEL_PRICING` table was already correct (Opus prices didn't change between 4.6 → 4.7). Updated the documenting comment to reflect both versions and to flag the 4.7 tokenizer difference. Bumped `MODEL_PRICING_LAST_VERIFIED` to 2026-04-17.
+
+### Description optimization
+Per agentskills.io spec, descriptions should cast a wider net over near-miss phrasings. Broadened four skill descriptions that were triggering on narrow keywords only:
+- **`activity-patterns`:** added "am I a night owl", "when do I actually work", weekday-vs-weekend phrasings
+- **`daily-brief`:** added "what should I work on today", "plan my day", "morning check-in"
+- **`pace-check`:** added "how much runway do I have", "should I keep working", "am I burning too fast", "will I hit my limit"
+- **`session-timer`:** added "how long have I been at this", "how long have I been working"
+- **`session-health`:** added "how big is my session", "how close to compaction", "should I checkpoint"
+- **`context-budget`:** added "is this file too big to read"
+
+No changes to the four skills whose descriptions were already well-targeted (focus-mode, peak-hours, time-menu) — version bump only for consistency.
+
+### Why
+Cursor-refresh release to align the plugin with the Claude 4.7 model family and tighten trigger coverage on descriptions. No breaking changes — per-token Opus pricing is unchanged between 4.6 and 4.7, so existing cost calculations still produce correct numbers. The `xhigh` effort pointer in pace-check is a safety net for users who don't realize effort tier affects token burn.
+
 ## [1.8.3] — 2026-04-11
 
 ### Changed

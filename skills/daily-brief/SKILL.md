@@ -1,10 +1,10 @@
 ---
 name: daily-brief
-description: Get a morning briefing with peak hour status, schedule outlook, and work recommendations for the day. Use at the start of a new day or when asking for a daily summary.
+description: Get a morning briefing with peak hour status, schedule outlook, and work recommendations for the day. Use at the start of a new day, when asking for a daily summary, "what should I work on today", "plan my day", "morning check-in", or when the user wants a quick orientation before settling into work.
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.8.3"
+  version: "1.9.0"
 ---
 
 # Daily Briefing
