@@ -4,7 +4,7 @@ description: Check real rate limit usage from the Anthropic API — session (5-h
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.9.0"
+  version: "1.9.1"
 ---
 
 # Pace Check — Rate Limit Status

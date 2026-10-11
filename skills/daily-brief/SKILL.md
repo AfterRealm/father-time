@@ -4,7 +4,7 @@ description: Get a morning briefing with peak hour status, schedule outlook, and
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.9.0"
+  version: "1.9.1"
 ---
 
 # Daily Briefing

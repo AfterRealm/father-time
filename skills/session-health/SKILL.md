@@ -4,7 +4,7 @@ description: Check your current session's health — real context usage from JSO
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.9.0"
+  version: "1.9.1"
 ---
 
 # Session Health Check
