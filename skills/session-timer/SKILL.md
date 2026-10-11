@@ -4,7 +4,7 @@ description: Check how long the current session has been running. Use when askin
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.9.0"
+  version: "1.9.1"
 ---
 
 # Session Timer

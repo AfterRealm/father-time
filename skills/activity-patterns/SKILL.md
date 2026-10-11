@@ -4,7 +4,7 @@ description: Analyze your work patterns over time — when you typically work, p
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.9.0"
+  version: "1.9.1"
 ---
 
 # Activity Patterns

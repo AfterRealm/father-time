@@ -4,7 +4,7 @@ description: Estimate the token cost of reading a file or directory before doing
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.9.0"
+  version: "1.9.1"
 ---
 
 # Context Budget — Token Estimation

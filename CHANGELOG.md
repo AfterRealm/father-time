@@ -2,6 +2,11 @@
 
 All notable changes to Father Time are documented here.
 
+## [1.9.1] — 2026-10-11
+
+### Fixed
+- **The update notice now prints a command that works.** It used to say `claude plugin update "father-time@afterrealm-plugins"`, but the marketplace is named `afterrealm`, so the command failed with "not installed". It now says `claude plugin update father-time`.
+
 ## [1.9.0] — 2026-04-17
 
 ### Changed

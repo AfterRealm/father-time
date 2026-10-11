@@ -4,7 +4,7 @@ description: Start a focus timer for deep work sessions. Tracks elapsed time and
 license: MIT
 metadata:
   author: AfterRealm
-  version: "1.9.0"
+  version: "1.9.1"
 ---
 
 # Focus Mode
