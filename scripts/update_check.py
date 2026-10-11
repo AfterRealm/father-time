@@ -67,7 +67,7 @@ def main():
 
     if version_tuple(latest) > version_tuple(installed):
         print(f"Father Time update available: v{installed} -> v{latest}")
-        print(f"Run: claude plugin update \"father-time@afterrealm-plugins\"")
+        print("Run: claude plugin update father-time")
     # If up to date, print nothing — no noise
 
 
